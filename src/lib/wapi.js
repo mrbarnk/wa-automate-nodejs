@@ -285,16 +285,16 @@ window.WAPI.getAllChatIds = function () {
 };
 
 window.WAPI.getAllNewMessages = async function () {
-    return WAPI.getAllChatsWithNewMsg().map(c => WAPI.getChat(c.id)).flatMap(c => c.msgs._models.filter(x => x.isNewMsg)).map(WAPI._serializeMessageObj) || [];
+    return WAPI.getAllChatsWithNewMsg().map(c => WAPI.getChat(c.id)).flatMap(c => c?.msgs._models.filter(x => x.isNewMsg)).map(WAPI._serializeMessageObj) || [];
 }
 
 // nnoo longer determined by x.ack==-1
 window.WAPI.getAllUnreadMessages = async function () {
-    return Store.Chat.models.filter(chat=>chat.unreadCount&&chat.unreadCount>0).map(unreadChat=>unreadChat.msgs.models.slice(-1*unreadChat.unreadCount)).flat().map(WAPI._serializeMessageObj)
+    return Store.Chat.models.filter(chat=>chat.unreadCount&&chat.unreadCount>0).map(unreadChat=>unreadChat?.msgs.models.slice(-1*unreadChat.unreadCount)).flat().map(WAPI._serializeMessageObj)
 }
 
 window.WAPI.getIndicatedNewMessages = async function () {
-    return JSON.stringify(Store.Chat.models.filter(chat=>chat.unreadCount).map(chat=>{return {id:chat.id,indicatedNewMessages: chat.msgs.models.slice(Math.max(chat.msgs.length - chat.unreadCount, 0)).filter(msg=>!msg.id.fromMe)}}))
+    return JSON.stringify(Store.Chat.models.filter(chat=>chat.unreadCount).map(chat=>{return {id:chat.id,indicatedNewMessages: chat?.msgs.models.slice(Math.max(chat?.msgs.length - chat.unreadCount, 0)).filter(msg=>!msg.id.fromMe)}}))
 }
 
 window.WAPI.getSingleProperty = function (namespace,id,property){
@@ -373,7 +373,7 @@ window.WAPI.getChatByName = function (name) {
 
 window.WAPI.sendImageFromDatabasePicBot = function (picId, chatId, caption) {
     var chatDatabase = window.WAPI.getChatByName('DATABASEPICBOT');
-    var msgWithImg = chatDatabase.msgs.find((msg) => msg.caption == picId);
+    var msgWithImg = chatDatabase?.msgs.find((msg) => msg.caption == picId);
 
     if (msgWithImg === undefined) {
         return false;
@@ -499,7 +499,7 @@ window.WAPI.getChatById = function (id) {
 window.WAPI.getUnreadMessagesInChat = function (id, includeMe, includeNotifications) {
     // get chat and its messages
     let chat = WAPI.getChat(id);
-    let messages = chat.msgs._models;
+    let messages = chat?.msgs._models;
 
     // initialize result list
     let output = [];
@@ -557,7 +557,7 @@ window.WAPI.loadEarlierMessages = async function (id) {
  */
 window.WAPI.loadAllEarlierMessages = async function (id) {
     const found = WAPI.getChat(id);
-    while (!found.msgs.msgLoadState.noEarlierMsgs) {
+    while (!found?.msgs.msgLoadState.noEarlierMsgs) {
         console.log('loading more messages')
         await found.loadEarlierMsgs();
     }
@@ -570,7 +570,7 @@ window.WAPI.asyncLoadAllEarlierMessages = async function (id) {
 
 window.WAPI.areAllMessagesLoaded = function (id) {
     const found = WAPI.getChat(id);
-    if (!found.msgs.msgLoadState.noEarlierMsgs) {
+    if (!found?.msgs.msgLoadState.noEarlierMsgs) {
         return false
     }
     return true
@@ -587,7 +587,7 @@ window.WAPI.areAllMessagesLoaded = function (id) {
 window.WAPI.loadEarlierMessagesTillDate = async function (id, lastMessage) {
     const found = WAPI.getChat(id);
     x = async function () {
-        if (found.msgs.models[0].t > lastMessage && !found.msgs.msgLoadState.noEarlierMsgs) {
+        if (found?.msgs.models[0].t > lastMessage && !found?.msgs.msgLoadState.noEarlierMsgs) {
             return await found.loadEarlierMsgs().then(x);
         } else {
             return true
@@ -693,7 +693,7 @@ window.WAPI.processMessageObj = function (messageObj, includeMe, includeNotifica
 
 window.WAPI.getAllMessagesInChat = function (id, includeMe = false, includeNotifications = false, clean = false) {
     const chat = WAPI.getChat(id);
-    let output = chat.msgs._models || [];
+    let output = chat?.msgs._models || [];
     if(!includeMe) output =  output.filter(m=> !m.id.fromMe)
     if(!includeNotifications) output = output.filter(m=> !m.isNotification)
     return (clean ? output.map(WAPI.quickClean) : output.map(WAPI._serializeMessageObj)) || [];
@@ -703,7 +703,7 @@ window.WAPI.loadAndGetAllMessagesInChat = function (id, includeMe, includeNotifi
     return WAPI.loadAllEarlierMessages(id).then(_ => {
         const chat = WAPI.getChat(id);
         let output = [];
-        const messages = chat.msgs._models;
+        const messages = chat?.msgs._models;
 
         for (const i in messages) {
             if (i === "remove") {
@@ -722,7 +722,7 @@ window.WAPI.loadAndGetAllMessagesInChat = function (id, includeMe, includeNotifi
 window.WAPI.getAllMessageIdsInChat = function (id, includeMe, includeNotifications) {
     const chat = WAPI.getChat(id);
     let output = [];
-    const messages = chat.msgs._models;
+    const messages = chat?.msgs._models;
 
     for (const i in messages) {
         if ((i === "remove")
@@ -749,7 +749,7 @@ window.WAPI.getMessageById = function (id) {
 window.WAPI.sendMessageWithMentions = async function (ch, body) {
     var chat = ch.id ? ch : Store.Chat.get(ch);
     var chatId = chat.id._serialized;
-    var msgIveSent = chat.msgs.filter(msg => msg.__x_isSentByMe)[0];
+    var msgIveSent = chat?.msgs.filter(msg => msg.__x_isSentByMe)[0];
     if(!msgIveSent) return chat.sendMessage(body);
     var tempMsg = Object.create(msgIveSent);
     var newId = window.WAPI.getNewMessageId(chatId);
@@ -775,7 +775,7 @@ window.WAPI.sendMessageWithMentions = async function (ch, body) {
 window.WAPI.sendMessageReturnId = async function (ch, body) {
     var chat = ch.id ? ch : Store.Chat.get(ch);
     var chatId = chat.id._serialized;
-    var msgIveSent = chat.msgs.filter(msg => msg.__x_isSentByMe)[0];
+    var msgIveSent = chat?.msgs.filter(msg => msg.__x_isSentByMe)[0];
     if(!msgIveSent) return chat.sendMessage(body);
     var tempMsg = Object.create(msgIveSent);
     var newId = window.WAPI.getNewMessageId(chatId);
@@ -800,7 +800,7 @@ window.WAPI.sendMessageReturnId = async function (ch, body) {
 window.WAPI.sendMessage = async function (id, message) {
     if(id==='status@broadcast') return 'Not able to send message to broadcast';
     let chat = WAPI.getChat(id);
-    if((!chat && !id.includes('g') || chat.msgs.models.length == 0)) {
+    if((!chat && !id.includes('g') || chat?.msgs.models.length == 0)) {
         var contact = WAPI.getContact(id)
         if(!contact || !contact.isMyContact) return 'Not a contact';
         await Store.Chat.find(Store.Contact.get(id).id)
@@ -865,7 +865,7 @@ window.WAPI.getUnreadMessages = function (includeMe, includeNotifications, use_u
 
         messageGroup.messages = [];
 
-        const messages = messageGroupObj.msgs._models;
+        const messages = messageGroupObj?.msgs._models;
         for (let i = messages.length - 1; i >= 0; i--) {
             let messageObj = messages[i];
             if (typeof (messageObj.isNewMsg) != "boolean" || messageObj.isNewMsg === false) {
